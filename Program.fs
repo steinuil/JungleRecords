@@ -280,51 +280,51 @@ type JungleRecordsGame() as this =
         spriteBatch <- new SpriteBatch(graphics.GraphicsDevice)
 
         let loadTexture tex =
-            this.Content.Load<Texture2D>(@"Content\Textures\" + tex)
+            this.Content.Load<Texture2D>(@"Content/Textures/" + tex)
 
         let loadSfx sfx =
-            this.Content.Load<SoundEffect>(@"Content\Sounds\" + sfx)
+            this.Content.Load<SoundEffect>(@"Content/Sounds/" + sfx)
 
         for i in 1 .. bgCount do
-            backgrounds.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content\Textures\black %d" i)
+            backgrounds.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content/Textures/black %d" i)
         
         for i in 1 .. cornerCount do
-            corners.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content\Textures\corner %d" i)
+            corners.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content/Textures/corner %d" i)
 
         for i in 1 .. frontCount do
-            fronts.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content\Textures\front %d" i)
+            fronts.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content/Textures/front %d" i)
 
         for i in 1 .. wallCount do
-            walls.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content\Textures\wall %d" i)
+            walls.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content/Textures/wall %d" i)
 
         for i in 1 .. recordsCount do
-            records.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content\Textures\record %d" i)
+            records.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content/Textures/record %d" i)
 
         for i in 0 .. mapCount - 1 do
-            maps.[i] <- Maps.loadMap i (sprintf @"Content\Maps\level %d.txt" i)
+            maps.[i] <- Maps.loadMap i (sprintf @"Content/Maps/level %d.txt" i)
 
         for i in 1 .. levelIndicatorBgCount do
-            levelIndicatorBg.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content\Textures\level bg %d" i)
+            levelIndicatorBg.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content/Textures/level bg %d" i)
 
-        levelIndicatorText <- this.Content.Load<Texture2D>(@"Content\Textures\level writing")
+        levelIndicatorText <- this.Content.Load<Texture2D>(@"Content/Textures/level writing")
 
         for i in 0 .. levelNumberCount - 1 do
-            levelNumbers.[i] <- this.Content.Load<Texture2D>(sprintf @"Content\Textures\level %d" i)
+            levelNumbers.[i] <- this.Content.Load<Texture2D>(sprintf @"Content/Textures/level %d" i)
 
-        mapBg <- this.Content.Load<Texture2D>(@"Content\Textures\map bg")
-        mapCursor <- this.Content.Load<Texture2D>(@"Content\Textures\map cursor")
-        mapWall <- this.Content.Load<Texture2D>(@"Content\Textures\map wall")
+        mapBg <- this.Content.Load<Texture2D>(@"Content/Textures/map bg")
+        mapCursor <- this.Content.Load<Texture2D>(@"Content/Textures/map cursor")
+        mapWall <- this.Content.Load<Texture2D>(@"Content/Textures/map wall")
 
-        titleCard1 <- this.Content.Load<Texture2D>(@"Content\Textures\title")
-        titleCard2 <- this.Content.Load<Texture2D>(@"Content\Textures\title 2")
-        titleJingle <- this.Content.Load<SoundEffect>(@"Content\Sounds\title")
+        titleCard1 <- this.Content.Load<Texture2D>(@"Content/Textures/title")
+        titleCard2 <- this.Content.Load<Texture2D>(@"Content/Textures/title 2")
+        titleJingle <- this.Content.Load<SoundEffect>(@"Content/Sounds/title")
 
-        stepSfx <- this.Content.Load<SoundEffect>(@"Content\Sounds\step")
-        stepShakySfx <- this.Content.Load<SoundEffect>(@"Content\Sounds\step shaky")
-        stompSfx <- this.Content.Load<SoundEffect>(@"Content\Sounds\stomp")
-        foundSfx <- this.Content.Load<SoundEffect>(@"Content\Sounds\found sfx")
+        stepSfx <- this.Content.Load<SoundEffect>(@"Content/Sounds/step")
+        stepShakySfx <- this.Content.Load<SoundEffect>(@"Content/Sounds/step shaky")
+        stompSfx <- this.Content.Load<SoundEffect>(@"Content/Sounds/stomp")
+        foundSfx <- this.Content.Load<SoundEffect>(@"Content/Sounds/found sfx")
 
-        bgHumAudioFile <- this.Content.Load<SoundEffect>(@"Content\Sounds\bg hum")
+        bgHumAudioFile <- this.Content.Load<SoundEffect>(@"Content/Sounds/bg hum")
         bgHumAudio <- bgHumAudioFile.CreateInstance()
         bgHumAudio.IsLooped <- true
         bgHumAudio.Volume <- 0.7f

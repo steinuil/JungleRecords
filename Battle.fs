@@ -488,10 +488,10 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
 
     member _.LoadContent(content: ContentManager) =
         let loadTexture name =
-            content.Load<Texture2D>(@"Content\Textures\" + name)
+            content.Load<Texture2D>(@"Content/Textures/" + name)
 
         let loadSfx name =
-            content.Load<SoundEffect>(@"Content\Sounds\" + name)
+            content.Load<SoundEffect>(@"Content/Sounds/" + name)
 
         for i in 1 .. enemiesCount do
             enemiesTexture.[i - 1] <- loadTexture (sprintf "enemy %d" i)

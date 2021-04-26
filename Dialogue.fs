@@ -35,13 +35,13 @@ type DialogueSystem(textBoxChangeHz) =
 
     member _.LoadContent(content: ContentManager) =
         for i in 1 .. textBoxCount do
-            textBoxesBg.[i - 1] <- content.Load<Texture2D>(sprintf @"Content\Textures\text bg %d" i)
-            textBoxesFg.[i - 1] <- content.Load<Texture2D>(sprintf @"Content\Textures\text fg %d" i)
-            pressAnyKeyTexture.[i - 1] <- content.Load<Texture2D>(sprintf @"Content\Textures\press any key %d" i)
+            textBoxesBg.[i - 1] <- content.Load<Texture2D>(sprintf @"Content/Textures/text bg %d" i)
+            textBoxesFg.[i - 1] <- content.Load<Texture2D>(sprintf @"Content/Textures/text fg %d" i)
+            pressAnyKeyTexture.[i - 1] <- content.Load<Texture2D>(sprintf @"Content/Textures/press any key %d" i)
 
         let loadDialogue id lineCount =
             Array.init lineCount (fun i ->
-                content.Load<Texture2D>(sprintf @"Content\Dialogue\%c %i" id (i + 1))
+                content.Load<Texture2D>(sprintf @"Content/Dialogue/%c %i" id (i + 1))
             )
 
         [
@@ -87,7 +87,7 @@ type DialogueSystem(textBoxChangeHz) =
         )
 
         let loadSfx name =
-            content.Load<SoundEffect>(@"Content\Sounds\" + name)
+            content.Load<SoundEffect>(@"Content/Sounds/" + name)
 
         sfx <- loadSfx "dialogue"
 
