@@ -83,7 +83,7 @@ type JungleRecordsGame() as this =
     let mutable bgIndex = 0
     let mutable bgChange = hz
 
-    let mutable currentMap = 5
+    let mutable currentMap = 0
 
     let mutable currentX = 0
     let mutable currentY = 0
