@@ -1,4 +1,4 @@
-module Deeper.Battle
+module JungleRecords.Battle
 
 
 open Microsoft.Xna.Framework
@@ -384,11 +384,18 @@ let healthTextureCount = 2
 let shakeHz = 2
 
 
+type SystemState = BattleState | TextState of SystemState | DiedState | WonState
+
+
+type UpdateResult = Continue | Won | Exit
+
+
 type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
     let mutable currentEnemy = Unchecked.defaultof<Enemy>
     let mutable currentEnemyIndex = 0
     let mutable currentTurn = MyTurn
-    let mutable isShowingText = false
+    // let mutable isShowingText = false
+    let mutable state = BattleState
 
     let mutable selectedOptionIdx = 0
 
@@ -430,17 +437,24 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
     let mutable selectSfx = Unchecked.defaultof<SoundEffect>
     let mutable actionSfx = Unchecked.defaultof<SoundEffect>
 
+    let mutable youDiedTexture = Unchecked.defaultof<Texture2D>
+
+    let mutable hitSfx = Unchecked.defaultof<SoundEffect>
+
 
     let pushDialogue dialogueId =
         actionQueue <- Text dialogueId :: actionQueue
 
 
     let startDialogue dialogueId =
-        isShowingText <- true
+        match state with
+        | TextState _ -> ()
+        | prevState ->
+            state <- TextState prevState
         dialogueSystem.SetDialogue(dialogueId)
 
 
-    let mutable battleOutcome = NoOutcome
+    // let mutable battleOutcome = NoOutcome
 
     let mutable enemyShake = 0
     let mutable screenShake = 0
@@ -456,6 +470,20 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
             enemyShake <- enemyShake - 1
         if screenShake > 0 then
             screenShake <- screenShake - 1
+
+
+    let resetBattle level =
+        currentEnemy <- enemyByLevel level
+        currentEnemyIndex <- level - 1
+
+        currentTurn <- MyTurn
+        selectedOptionIdx <- 0
+        yourHealth <- 20
+        state <- BattleState
+        selectedOptionIdx <- 0
+        // battleOutcome <- NoOutcome
+
+        pushDialogue currentEnemy.InitialMessage
 
 
     member _.LoadContent(content: ContentManager) =
@@ -479,16 +507,13 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
         selectSfx <- loadSfx "select"
         actionSfx <- loadSfx "action"
 
+        youDiedTexture <- loadTexture "you died"
+
+        hitSfx <- loadSfx "hit"
+
 
     member _.StartBattle level =
-        currentEnemy <- enemyByLevel level
-        currentEnemyIndex <- level - 1
-        currentTurn <- MyTurn
-        selectedOptionIdx <- 0
-        yourHealth <- 20
-        battleOutcome <- NoOutcome
-
-        pushDialogue currentEnemy.InitialMessage
+        resetBattle level
         pushDialogue '0'
 
 
@@ -500,25 +525,30 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
         let updateFromActionQueue () =
             match popActionQueue () with
             | None ->
-                isShowingText <- false
-            | Some (TookDamage n) ->
+                match state with
+                | TextState prevState ->
+                    state <- prevState
+                | _ -> ()
+            | Some (TookDamage _) ->
                 startDialogue 'r'
             | Some Blocked ->
                 startDialogue 'q'
             | Some (Text dialogueId) ->
                 startDialogue dialogueId
 
-        if isShowingText then
+        match state with
+        | TextState _ ->
             let isOver = dialogueSystem.Update(not (Set.isEmpty keysJustPressed))
-            if isOver then
-                updateFromActionQueue ()
+            if isOver then updateFromActionQueue ()
 
-            false
-        elif not (List.isEmpty actionQueue) then
+            Continue
+
+        | BattleState | WonState | DiedState when not (List.isEmpty actionQueue) ->
             updateFromActionQueue ()
 
-            false
-        elif battleOutcome = NoOutcome then
+            Continue
+        
+        | BattleState ->
             match currentTurn with
             | EnemyTurn playerAction ->
                 let prevEnemyHealth = currentEnemy.Health
@@ -526,11 +556,12 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
                 let enemyAction, sideEffects = currentEnemy.NextAction playerAction
 
                 if currentEnemy.Health <> prevEnemyHealth then
+                    hitSfx.Play() |> ignore
                     shakeEnemy ()
 
                 if currentEnemy.Health < 1 && enemyAction <> Suicide then
                     pushDialogue '+'
-                    battleOutcome <- EnemyDied
+                    state <- WonState
 
                 else
                     match enemyAction with
@@ -545,11 +576,15 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
                             else
                                 yourHealth <- yourHealth - n
                                 shakeScreen ()
+                                if currentEnemy.Health = prevEnemyHealth then
+                                    hitSfx.Play() |> ignore
+
                                 'p'
 
                         if yourHealth < 1 then
                             pushDialogue '-'
-                            battleOutcome <- YouDied
+                            state <- DiedState
+                            selectedOptionIdx <- 0
                         else
                             currentTurn <- MyTurn
                             actionQueue <- sideEffects
@@ -571,7 +606,8 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
                     | Suicide ->
                         pushDialogue '+'
                         pushDialogue '4'
-                        battleOutcome <- EnemyDied
+                        state <- WonState
+
             | MyTurn ->
                 if keysJustPressed.Contains Keys.W || keysJustPressed.Contains Keys.Up then
                     selectedOptionIdx <- ((selectedOptionIdx - 1) + 3) % 3
@@ -601,14 +637,44 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
                     | Bark ->
                         pushDialogue '8'
 
-            false
-        else
-            true
+            Continue
+
+        | WonState ->
+            Won
+
+        | DiedState ->
+            if keysJustPressed.Contains Keys.W || keysJustPressed.Contains Keys.Up then
+                selectedOptionIdx <- ((selectedOptionIdx - 1) + 2) % 2
+                selectSfx.Play() |> ignore
+
+                Continue
+
+            elif keysJustPressed.Contains Keys.S || keysJustPressed.Contains Keys.Down then
+                selectedOptionIdx <- (selectedOptionIdx + 1) % 2
+                selectSfx.Play() |> ignore
+
+                Continue
+
+            elif keysJustPressed.Contains Keys.Space || keysJustPressed.Contains Keys.E then
+                actionSfx.Play () |> ignore
+                
+                match selectedOptionIdx with
+                | 0 ->
+                    actionQueue <- []
+                    resetBattle (currentEnemyIndex + 1)
+                    Continue
+
+                | 1 -> Exit
+                | n -> failwithf "invalid selected option: %d" n
+            else
+                Continue
 
 
     member _.Draw(spriteBatch: SpriteBatch) =
         let drawTexture tex (x, y) (w, h) =
             spriteBatch.Draw(tex, Rectangle(x, y, w, h), Color.White)
+
+        let isShowingText = match state with TextState _ -> true | _ -> false
 
         if isShowingText then
             dialogueSystem.Draw(spriteBatch)
@@ -635,32 +701,32 @@ type BattleSystem(dialogueSystem: Dialogue.DialogueSystem, hz: int) =
                 Color.White
             )
 
-        drawTexture battleUiTexture (0 + screenShakeAmount, 0) (1024, 768)
+        match state with
+        | WonState -> ()
+        | BattleState | TextState _ ->
+            drawTexture battleUiTexture (0 + screenShakeAmount, 0) (1024, 768)
 
-        if currentTurn = MyTurn && not isShowingText then
+            if currentTurn = MyTurn && not isShowingText then
+                drawTexture battleSelectorTexture.[battleSelectorIndex]
+                    (701 + screenShakeAmount, 286 + (70 * selectedOptionIdx)) (50, 50)
+
+            let enemyShakeAmount =
+                if enemyShake < 1 then
+                    0
+                elif (enemyShake / 3) % 2 = 0 then
+                        -3
+                else
+                    3
+            drawTexture enemiesTexture.[currentEnemyIndex] (34 + enemyShakeAmount , 71) (600, 400)
+
+            if yourHealth > 0 then
+                drawHealthBar healthTexture.[healthBarIndex] yourHealth 25
+
+            if currentEnemy.Health > 0 then
+                drawHealthBar healthTexture.[(healthBarIndex + 1) % healthTextureCount] currentEnemy.Health 137
+
+        | DiedState ->
+            drawTexture youDiedTexture (0, 0) (1024, 768)
+
             drawTexture battleSelectorTexture.[battleSelectorIndex]
                 (701 + screenShakeAmount, 286 + (70 * selectedOptionIdx)) (50, 50)
-
-        let enemyShakeAmount =
-            if enemyShake < 1 then
-                0
-            elif (enemyShake / 3) % 2 = 0 then
-                    -3
-            else
-                3
-        drawTexture enemiesTexture.[currentEnemyIndex] (34 + enemyShakeAmount , 71) (600, 400)
-
-        if yourHealth > 0 then
-            drawHealthBar healthTexture.[healthBarIndex] yourHealth 25
-
-        if currentEnemy.Health > 0 then
-            drawHealthBar healthTexture.[(healthBarIndex + 1) % healthTextureCount] currentEnemy.Health 137
-
-        if currentEnemy.IsDefending then
-            ()
-
-        if currentEnemy.IsRecovering then
-            ()
-
-        if currentEnemy.IsStartled then
-            ()

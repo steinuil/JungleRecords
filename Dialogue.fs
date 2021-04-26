@@ -1,4 +1,4 @@
-module Deeper.Dialogue
+module JungleRecords.Dialogue
 
 
 open Microsoft.Xna.Framework

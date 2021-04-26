@@ -1,4 +1,4 @@
-module Deeper.Main
+module JungleRecords.Main
 
 
 open Microsoft.Xna.Framework
@@ -18,9 +18,9 @@ let recordsCount = 5
 let levelIndicatorBgCount = 2
 let levelNumberCount = 7
 
-let mapCount = 6
+let endCardCount = 2
 
-// let bgChangeHz = 40
+let mapCount = 6
 
 let hz = 5
 
@@ -33,16 +33,16 @@ type GameState =
     | Text of id:char
     | Dungeon
     | Battle of recordId:char
-    | End
+    | End of int
 
 
-type DeeperGame() as this =
+type JungleRecordsGame() as this =
     inherit Game()
 
     let graphics =
         new GraphicsDeviceManager(this, PreferredBackBufferWidth = 1024, PreferredBackBufferHeight = 768)
 
-    // do this.IsMouseVisible <- true
+    do this.IsMouseVisible <- true
 
     let mutable spriteBatch = Unchecked.defaultof<SpriteBatch>
 
@@ -73,12 +73,17 @@ type DeeperGame() as this =
     let mutable bgHumAudioFile = Unchecked.defaultof<SoundEffect>
     let mutable bgHumAudio = Unchecked.defaultof<SoundEffectInstance>
 
+    let mutable endingBgmFile = Unchecked.defaultof<SoundEffect>
+    let mutable endingBgm = Unchecked.defaultof<SoundEffectInstance>
+
     let maps = Array.create mapCount Unchecked.defaultof<Maps.Map>
+
+    let mutable endCards = Array.create endCardCount Unchecked.defaultof<Texture2D>
 
     let mutable bgIndex = 0
     let mutable bgChange = hz
 
-    let mutable currentMap = 0
+    let mutable currentMap = 5
 
     let mutable currentX = 0
     let mutable currentY = 0
@@ -246,6 +251,16 @@ type DeeperGame() as this =
             Color.White
         )
 
+
+    // Background
+    let updateBackground () =
+        if bgChange = 0 then
+            bgChange <- hz
+            bgIndex <- (bgIndex + 1) % bgCount
+        else
+            bgChange <- bgChange - 1
+
+
     // Systems
     let dialogueSystem = Dialogue.DialogueSystem(hz)
     let battleSystem = Battle.BattleSystem(dialogueSystem, hz)
@@ -263,6 +278,12 @@ type DeeperGame() as this =
 
     override _.LoadContent() =
         spriteBatch <- new SpriteBatch(graphics.GraphicsDevice)
+
+        let loadTexture tex =
+            this.Content.Load<Texture2D>(@"Content\Textures\" + tex)
+
+        let loadSfx sfx =
+            this.Content.Load<SoundEffect>(@"Content\Sounds\" + sfx)
 
         for i in 1 .. bgCount do
             backgrounds.[i - 1] <- this.Content.Load<Texture2D>(sprintf @"Content\Textures\black %d" i)
@@ -313,13 +334,15 @@ type DeeperGame() as this =
         currentDirection <- maps.[currentMap].StartDirection
         currentRecord <- maps.[currentMap].RecordPosition
 
+        for i in 1 .. endCardCount do
+            endCards.[i - 1] <- loadTexture (sprintf "end %d" i)
+
+        endingBgmFile <- loadSfx "ending"
+        endingBgm <- endingBgmFile.CreateInstance()
+        endingBgm.IsLooped <- true
+
         dialogueSystem.LoadContent(this.Content)
         battleSystem.LoadContent(this.Content)
-
-        // DELETE ME LATER
-        // battleSystem.StartBattle 1
-        // gameState <- Battle Maps.levelToRecordMap.[5]
-        // DELETE ME LATER
 
         base.LoadContent()
 
@@ -332,7 +355,7 @@ type DeeperGame() as this =
             dialogueSystem.SetDialogue(id)
 
         match gameState with
-        | Start n when n = 0 ->
+        | Start 0 ->
             startDialogue 'a'
             bgHumAudio.Play()
         
@@ -340,11 +363,7 @@ type DeeperGame() as this =
             if n = 360 then
                 titleJingle.Play() |> ignore
 
-            if bgChange = 0 then
-                bgChange <- hz
-                bgIndex <- (bgIndex + 1) % bgCount
-            else
-                bgChange <- bgChange - 1
+            updateBackground ()
 
             gameState <- Start (n - 1)
 
@@ -401,16 +420,19 @@ type DeeperGame() as this =
                 (keysJustPressed.Contains Keys.Space || keysJustPressed.Contains Keys.E) &&
                 maps.[currentMap].EndPosition = Point(currentX, currentY)
             then
-                if Option.isNone currentRecord then
-                    currentMap <- (currentMap + 1) % mapCount
+                if Option.isSome currentRecord then
+                    startDialogue 'd'
+                elif currentMap >= mapCount - 1 then
+                    gameState <- End 0
+                    stompSfx.Play() |> ignore
+                else
+                    currentMap <- currentMap + 1
                     currentX <- maps.[currentMap].StartPosition.X
                     currentY <- maps.[currentMap].StartPosition.Y
                     currentDirection <- maps.[currentMap].StartDirection
                     currentRecord <- maps.[currentMap].RecordPosition
                     hasChanged <- true
                     stompSfx.Play() |> ignore
-                else
-                    startDialogue 'd'
 
 
             if hasChanged then
@@ -427,12 +449,34 @@ type DeeperGame() as this =
 
 
         | Battle recordId ->
-            if battleSystem.Update(keysJustPressed) then
+            match battleSystem.Update(keysJustPressed) with
+            | Battle.Continue -> ()
+            | Battle.Won ->
                 ignore <| foundSfx.Play()
                 startDialogue recordId
+            | Battle.Exit ->
+                this.Exit()
 
 
-        | End -> ()
+        | End 0 ->
+            if bgHumAudio.State = SoundState.Playing then
+                bgHumAudio.Stop()
+                endingBgm.Play()
+
+            updateBackground ()
+
+            let wasAnyKeyPressed = not <| Set.isEmpty keysJustPressed
+
+            if wasAnyKeyPressed then
+                gameState <- End 1
+
+
+        | End _ ->
+            if keysJustPressed.Contains Keys.Space || keysJustPressed.Contains Keys.E then
+                this.Exit()
+
+            updateBackground ()
+
 
         updateRecord ()
         updateLevelNumberIndicator ()
@@ -489,7 +533,9 @@ type DeeperGame() as this =
                 battleSystem.Draw(spriteBatch)
 
 
-            | End -> ()
+            | End n ->
+                drawTexture endCards.[n]
+
 
 
         spriteBatch.End()
@@ -499,6 +545,6 @@ type DeeperGame() as this =
 
 [<EntryPoint; STAThread>]
 let main _argv =
-    use game = new DeeperGame()
+    use game = new JungleRecordsGame()
     game.Run()
     0

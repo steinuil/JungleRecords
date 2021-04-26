@@ -1,4 +1,4 @@
-module Deeper.Patterns
+module JungleRecords.Patterns
 
 
 open Microsoft.Xna.Framework
@@ -62,31 +62,6 @@ let translateMap (map: Maps.MapTile[,]) (record: Point option) (cx, cy) dir =
         else
             X
     )
-
-
-// let printPattern columns =
-//     Array.iter (fun row ->
-//         Array.iter (
-//             function
-//             | X -> printf "X"
-//             | O _ -> printf "O"
-//         ) row
-//         printfn ""
-//     ) columns
-
-//     printfn "    | [|"
-//     Array.iter (fun row ->
-//         Array.map (
-//             function
-//             | X -> "_"
-//             | O _ -> "O"
-//         ) row
-//         |> String.concat "; "
-//         |> printfn "          [|%s|]"
-//     ) columns
-//     printfn "      |] ->"
-//     printfn "        ["
-//     printfn "        ]"
 
 
 let wallRightOf =
