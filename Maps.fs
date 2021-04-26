@@ -29,15 +29,21 @@ type MapTile =
 
 
 type Map = {
+    Number: int
     Tiles: MapTile[,] // index with y,x
     StartPosition: Point
     EndPosition: Point
     StartDirection: CardinalDirection
     RecordPosition: Point option
+    Triggers: MutableDict.T<int64, char>
 }
 
 
-let loadMap f =
+let hashPosition x y =
+    0L ||| int64 y ||| (int64 x <<< 32)
+
+
+let loadMap n f =
     let lines =
         System.IO.File.ReadAllText(f, System.Text.Encoding.UTF8)
             .Split([|"\r\n"; "\n"|], System.StringSplitOptions.RemoveEmptyEntries)
@@ -48,6 +54,8 @@ let loadMap f =
     let mutable endPosition = Unchecked.defaultof<Point>
     let mutable startDirection = Unchecked.defaultof<CardinalDirection>
     let mutable recordPosition = None
+
+    let triggers = MutableDict.empty ()
 
     let tiles = lines |> Array2D.mapi (fun y x ->
         function
@@ -75,14 +83,24 @@ let loadMap f =
         | 'R' ->
             recordPosition <- Some (Point(x, y))
             Floor
+        | 'b' ->
+            endPosition <- Point(x, y)
+            triggers.[hashPosition x y] <- 'b'
+            Floor
+        | c when c >= 'a' && c <= 'z' ->
+            triggers.[hashPosition x y] <- c
+            Floor
         | c -> failwithf "unrecognized char: '%c'" c
     )
 
-    { Tiles = tiles
-      StartPosition = startPosition
-      EndPosition = endPosition
-      StartDirection = startDirection
-      RecordPosition = recordPosition
+    {
+        Number = n
+        Tiles = tiles
+        StartPosition = startPosition
+        EndPosition = endPosition
+        StartDirection = startDirection
+        RecordPosition = recordPosition
+        Triggers = triggers
     }
 
 
@@ -181,3 +199,13 @@ let minimap (map: MapTile[,]) (x, y) =
         else
             MinimapTile.Empty
     )
+
+
+let levelToRecordMap =
+    dict [
+        1, 'u'
+        2, 'v'
+        3, 'w'
+        4, 'z'
+        5, 'x'
+    ]

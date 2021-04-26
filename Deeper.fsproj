@@ -8,8 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="MutableDict.fs" />
+    <Compile Include="MutableSet.fs" />
     <Compile Include="Maps.fs" />
     <Compile Include="Patterns.fs" />
+    <Compile Include="Dialogue.fs" />
+    <Compile Include="Battle.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

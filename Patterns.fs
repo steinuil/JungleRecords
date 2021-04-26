@@ -54,7 +54,6 @@ let translateMap (map: Maps.MapTile[,]) (record: Point option) (cx, cy) dir =
                 match recordP with
                 | Some (px, py) ->
                     if px = tx && py = ty then
-                        printfn "%d,%d" px py
                         O (Some RecordItem)
                     else
                         O None
