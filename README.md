@@ -1,3 +1,13 @@
+# Waiting for Jungle Records to come in the Mail
+
+This is a game I made in 72 hours for [Ludum Dare 48](https://ldjam.com/events/ludum-dare/48).
+
+https://ldjam.com/events/ludum-dare/48/waiting-for-jungle-records-to-come-in-the-mail
+
+It's a simple first person dungeon crawler with a rudimentary combat system and hand-drawn graphics.
+
+It's written in F# and MonoGame.
+
 ## Release
 
 ```
